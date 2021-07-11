@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jul  3 18:39:40 2021
+
+@author: bob
+"""
+
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.uic import loadUiType
+
+import matplotlib.pyplot as plt
+
+import os
+import sys
+import cv2 as cv
+
+from filters import filters
+
+
+
+
+MainUI,_ = loadUiType('impr.ui')
+
+class Main(QMainWindow,MainUI):
+    
+    def __init__(self,parent= None):
+        super(Main,self).__init__(parent)
+        QMainWindow.__init__(self)
+        self.setupUi(self)
+        
+        self.filters = None
+
+        self.br = 0
+        self.con = 1.0
+
+
+        self.pushButton.clicked.connect(self.load_img)
+        self.radioButton.clicked.connect(self.default_conv)
+        self.radioButton_2.clicked.connect(self.gray_conv)
+        self.radioButton_3.clicked.connect(self.sp_noise)
+        self.radioButton_4.clicked.connect(self.gaussian_noise)
+        self.radioButton_5.clicked.connect(self.poisson_noise)
+        self.pushButton_2.clicked.connect(self.brightness_adj)
+        self.pushButton_3.clicked.connect(self.contrast_adj)
+        self.pushButton_4.clicked.connect(self.histogram)
+        self.pushButton_5.clicked.connect(self.histogram_equalizer)
+        self.pushButton_6.clicked.connect(self.lpf)
+        self.pushButton_7.clicked.connect(self.hpf)
+        self.pushButton_8.clicked.connect(self.medf)
+        self.pushButton_9.clicked.connect(self.avgf)
+
+        self.radioButton_6.clicked.connect(self.laplacian_edf)
+        self.radioButton_7.clicked.connect(self.gaussian_edf)
+        self.radioButton_8.clicked.connect(self.vertsobel_edf)
+        self.radioButton_9.clicked.connect(self.horizsobel_edf)
+        self.radioButton_10.clicked.connect(self.vertprewitt_edf)
+        self.radioButton_11.clicked.connect(self.horizprewitt_edf)
+        self.radioButton_12.clicked.connect(self.prewitt_edf)
+        self.radioButton_13.clicked.connect(self.log_edf)
+        self.radioButton_14.clicked.connect(self.canny_edf)
+        self.radioButton_15.clicked.connect(self.zerocross_edf)
+        self.radioButton_16.clicked.connect(self.skeleton_edf)
+        self.radioButton_17.clicked.connect(self.sobel_edf)
+
+        self.pushButton_10.clicked.connect(self.linedetect)
+        self.pushButton_11.clicked.connect(self.circledetect)
+
+        self.pushButton_12.clicked.connect(self.dilation_morph)
+        self.pushButton_13.clicked.connect(self.erosion_morph)
+        self.pushButton_14.clicked.connect(self.close_morph)
+        self.pushButton_15.clicked.connect(self.open_morph)
+
+        self.pushButton_16.clicked.connect(self.save_img)
+        self.pushButton_17.clicked.connect(self.exit_prog)
+
+        
+        self.show()
+        
+    def display_result(self, cvImg):
+        if cvImg.ndim == 3:
+            height, width, channel = cvImg.shape
+            bytesPerLine = 3 * width
+            self.qImg = QImage(cvImg.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
+            self.label_8.setPixmap(QPixmap.fromImage(self.qImg).scaled(310, 220))
+        elif cvImg.ndim == 2:
+            cvImg = cv.cvtColor(cvImg, cv.COLOR_GRAY2BGR)
+            height, width, channel = cvImg.shape
+            bytesPerLine = 3 * width
+            self.qImg = QImage(cvImg.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
+            self.label_8.setPixmap(QPixmap.fromImage(self.qImg).scaled(310, 220))   
+
+    def load_img(self):
+        img_path = QFileDialog.getOpenFileName(self, 'Open file', directory=os.path.dirname(__file__))[0]
+        self.label_6.setPixmap(QPixmap(img_path).scaled(310, 220))
+        self.filters = filters(cv.imread(img_path))
+
+    def default_conv(self):
+        self.display_result(self.filters.in_image)
+    
+    def gray_conv(self):
+        self.display_result(self.filters.gray)
+    
+    def sp_noise(self):
+        self.display_result(self.filters.add_noise("s&p"))
+    
+    def gaussian_noise(self):
+        self.display_result(self.filters.add_noise("gauss"))
+    
+    def poisson_noise(self):
+        self.display_result(self.filters.add_noise("poisson"))
+    
+    def brightness_adj(self):
+        self.br += 50
+        self.display_result(self.filters.bc_adj(beta=self.br))
+    
+    def contrast_adj(self):
+        self.con += 0.2
+        self.display_result(self.filters.bc_adj(alpha=self.con))
+    
+    def histogram(self):
+        self.filters.show_histogram()
+    
+    def histogram_equalizer(self):
+        self.display_result(self.filters.hist_equal())
+        
+    def lpf(self):
+        self.display_result(self.filters.low_pass_filter())
+    
+    def hpf(self):
+        self.display_result(self.filters.high_pass_filter())
+    
+    def medf(self):
+        self.display_result(self.filters.median())
+    
+    def avgf(self):
+        self.display_result(self.filters.avg())
+
+    def laplacian_edf(self):
+        self.display_result(self.filters.laplace())
+
+    def gaussian_edf(self):
+        self.display_result(self.filters.gauss())
+    
+    def log_edf(self):
+        self.display_result(self.filters.log())
+
+    def vertsobel_edf(self):
+        self.display_result(self.filters.sobel_v())
+
+    def horizsobel_edf(self):
+        self.display_result(self.filters.sobel_h())
+
+    def sobel_edf(self):
+        self.display_result(self.filters.sobel())
+
+    def vertprewitt_edf(self):
+        self.display_result(self.filters.prewitt_v())
+
+    def horizprewitt_edf(self):
+        self.display_result(self.filters.prewitt_h())
+
+    def prewitt_edf(self):
+        self.display_result(self.filters.prewitt())
+
+    def canny_edf(self):
+        self.display_result(self.filters.canny())
+
+    def zerocross_edf(self):
+        self.display_result(self.filters.zero_crossing())
+
+    def skeleton_edf(self):
+        self.display_result(self.filters.skeleton())
+
+    def linedetect(self):
+        self.display_result(self.filters.line_detect())
+    
+    def circledetect(self):
+        self.display_result(self.filters.circle_detect())
+    
+    def dilation_morph(self):
+        self.display_result(self.filters.dilatation())
+    
+    def erosion_morph(self):
+        self.display_result(self.filters.erosion())
+    
+    def close_morph(self):
+        self.display_result(self.filters.closing())
+    
+    def open_morph(self):
+        self.display_result(self.filters.opening())
+
+    def save_img(self):
+        filePath, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "JPEG(*.jpg *.jpeg);;PNG(*.png);;All Files(*.*) ")
+        self.qImg.save(filePath)
+
+    def exit_prog(self):
+        self.close()
+    
+        
+   
+
+def main():
+    app = QApplication(sys.argv)
+    window = Main()
+    window.show()
+    app.exec_()
+    
+if __name__ == '__main__':
+    main()
+    
